@@ -2,39 +2,38 @@ package com.micro.SpringMicro;
 
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
 
-    private final List<User> userList = new ArrayList<>();
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     public List<User> fetchAllUsers() {
-        return userList;
+        return userRepository.findAll();
     }
 
     public User addUser(User user) {
-        userList.add(user);
-        return user;
+        return userRepository.save(user);
     }
 
     public User fetchUserById(Long id) {
-        for (User user : userList) {
-            if (user.getId().equals(id)) {
-                return user;
-            }
-        }
-
-        return null;
+        return userRepository.findById(id).orElse(null);
     }
 
     public User updateUser(Long id, User updatedUser) {
-        for (User user : userList) {
-            if (user.getId().equals(id)) {
-                user.setFirstName(updatedUser.getFirstName());
-                return user;
-            }
+        Optional<User> existingUserOpt = userRepository.findById(id);
+
+        if (existingUserOpt.isPresent()) {
+            User user = existingUserOpt.get();
+            user.setFirstName(updatedUser.getFirstName());
+            user.setLastName(updatedUser.getLastName());
+            return userRepository.save(user);
         }
 
         return null;

@@ -1,4 +1,4 @@
-package com.micro.SpringMicro;
+package com.micro.SpringMicro.model;
 
 public enum UserRole {
     CUSTOMER,

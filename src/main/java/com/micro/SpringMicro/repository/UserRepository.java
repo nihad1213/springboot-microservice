@@ -1,5 +1,6 @@
-package com.micro.SpringMicro;
+package com.micro.SpringMicro.repository;
 
+import com.micro.SpringMicro.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

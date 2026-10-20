@@ -1,5 +1,7 @@
-package com.micro.SpringMicro;
+package com.micro.SpringMicro.controller;
 
+import com.micro.SpringMicro.model.User;
+import com.micro.SpringMicro.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

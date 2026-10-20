@@ -1,4 +1,4 @@
-package com.micro.SpringMicro;
+package com.micro.SpringMicro.model;
 
 import jakarta.persistence.*;
 import lombok.Data;

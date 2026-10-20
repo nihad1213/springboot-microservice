@@ -1,5 +1,7 @@
-package com.micro.SpringMicro;
+package com.micro.SpringMicro.service;
 
+import com.micro.SpringMicro.repository.UserRepository;
+import com.micro.SpringMicro.model.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

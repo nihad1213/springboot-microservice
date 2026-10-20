@@ -1,6 +1,7 @@
 package com.micro.SpringMicro.controller;
 
-import com.micro.SpringMicro.model.User;
+import com.micro.SpringMicro.dto.UserRequest;
+import com.micro.SpringMicro.dto.UserResponse;
 import com.micro.SpringMicro.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,35 +15,25 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private Long nextId = 1L;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.fetchAllUsers());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.fetchUserById(id));
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        user.setId(nextId++);
-        return ResponseEntity.ok(userService.addUser(user));
+    public ResponseEntity<UserResponse> createUser(@RequestBody UserRequest userRequest) {
+        return ResponseEntity.ok(userService.addUser(userRequest));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(
-            @PathVariable Long id,
-            @RequestBody User user
-    ) {
-        User updatedUser = userService.updateUser(id, user);
-
-        if (updatedUser == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok(updatedUser);
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest) {
+        UserResponse updatedUserResponse = userService.updateUser(id, userRequest);
+        return ResponseEntity.ok(updatedUserResponse);
     }
 }

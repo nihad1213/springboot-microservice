@@ -4,17 +4,19 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Data
-@RequiredArgsConstructor
 @NoArgsConstructor
-@Entity(name = "user_table")
+@Entity(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column()
     private String firstName;
 
     private String lastName;
@@ -25,6 +27,13 @@ public class User {
 
     private UserRole role = UserRole.CUSTOMER;
 
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
 
+    @CreationTimestamp
+    private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

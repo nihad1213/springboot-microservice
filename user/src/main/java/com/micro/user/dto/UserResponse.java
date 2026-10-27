@@ -1,6 +1,6 @@
 package com.micro.user.dto;
 
-import com.micro.SpringMicro.model.UserRole;
+import com.micro.user.model.UserRole;
 import lombok.Data;
 
 import java.time.LocalDateTime;

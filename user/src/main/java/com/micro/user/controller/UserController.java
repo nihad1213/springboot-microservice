@@ -22,7 +22,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.fetchUserById(id));
     }
 
@@ -32,7 +32,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable String id, @RequestBody UserRequest userRequest) {
         UserResponse updatedUserResponse = userService.updateUser(id, userRequest);
         return ResponseEntity.ok(updatedUserResponse);
     }

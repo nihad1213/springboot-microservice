@@ -28,34 +28,37 @@ public class UserService {
 
     public UserResponse addUser(UserRequest userRequest) {
         User user = new User();
+
         user.setFirstName(userRequest.getFirstName());
         user.setLastName(userRequest.getLastName());
         user.setEmail(userRequest.getEmail());
         user.setPhone(userRequest.getPhone());
 
         if (userRequest.getAddress() != null) {
-            Address address = new Address();
-            address.setStreet(userRequest.getAddress().getStreet());
-            address.setCity(userRequest.getAddress().getCity());
-            address.setState(userRequest.getAddress().getState());
-            address.setCountry(userRequest.getAddress().getCountry());
-            address.setZipcode(userRequest.getAddress().getZipcode());
-            user.setAddress(address);
+            user.setAddress(mapToAddress(userRequest.getAddress()));
         }
 
         User savedUser = userRepository.save(user);
+
         return mapToUserResponse(savedUser);
     }
 
-    public UserResponse fetchUserById(Long id) {
+    public UserResponse fetchUserById(String id) {
         return userRepository.findById(id)
                 .map(this::mapToUserResponse)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found with id: " + id)
+                );
     }
 
-    public UserResponse updateUser(Long id, UserRequest updatedUserRequest) {
+    public UserResponse updateUser(
+            String id,
+            UserRequest updatedUserRequest
+    ) {
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found with id: " + id)
+                );
 
         existingUser.setFirstName(updatedUserRequest.getFirstName());
         existingUser.setLastName(updatedUserRequest.getLastName());
@@ -63,31 +66,32 @@ public class UserService {
         existingUser.setPhone(updatedUserRequest.getPhone());
 
         if (updatedUserRequest.getAddress() != null) {
-            if (existingUser.getAddress() == null) {
-                Address newAddress = new Address();
-                newAddress.setStreet(updatedUserRequest.getAddress().getStreet());
-                newAddress.setCity(updatedUserRequest.getAddress().getCity());
-                newAddress.setState(updatedUserRequest.getAddress().getState());
-                newAddress.setCountry(updatedUserRequest.getAddress().getCountry());
-                newAddress.setZipcode(updatedUserRequest.getAddress().getZipcode());
-
-                existingUser.setAddress(newAddress);
-            } else {
-                existingUser.getAddress().setStreet(updatedUserRequest.getAddress().getStreet());
-                existingUser.getAddress().setCity(updatedUserRequest.getAddress().getCity());
-                existingUser.getAddress().setState(updatedUserRequest.getAddress().getState());
-                existingUser.getAddress().setCountry(updatedUserRequest.getAddress().getCountry());
-                existingUser.getAddress().setZipcode(updatedUserRequest.getAddress().getZipcode());
-            }
+            existingUser.setAddress(
+                    mapToAddress(updatedUserRequest.getAddress())
+            );
         }
 
         User savedUser = userRepository.save(existingUser);
+
         return mapToUserResponse(savedUser);
+    }
+
+    private Address mapToAddress(AddressDTO addressDTO) {
+        Address address = new Address();
+
+        address.setStreet(addressDTO.getStreet());
+        address.setCity(addressDTO.getCity());
+        address.setState(addressDTO.getState());
+        address.setCountry(addressDTO.getCountry());
+        address.setZipcode(addressDTO.getZipcode());
+
+        return address;
     }
 
     private UserResponse mapToUserResponse(User user) {
         UserResponse userResponse = new UserResponse();
-        userResponse.setId(String.valueOf(user.getId()));
+
+        userResponse.setId(user.getId());
         userResponse.setFirstName(user.getFirstName());
         userResponse.setLastName(user.getLastName());
         userResponse.setEmail(user.getEmail());
@@ -95,7 +99,7 @@ public class UserService {
 
         if (user.getAddress() != null) {
             AddressDTO addressDTO = new AddressDTO();
-            addressDTO.setId(String.valueOf(user.getAddress().getId()));
+
             addressDTO.setStreet(user.getAddress().getStreet());
             addressDTO.setCity(user.getAddress().getCity());
             addressDTO.setState(user.getAddress().getState());

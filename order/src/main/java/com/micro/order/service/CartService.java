@@ -75,7 +75,6 @@ public class CartService {
         cartItemRepository.delete(cartItem);
     }
 
-    /** A product deleted after being added to a cart should not break viewing the cart. */
     private ProductResponse fetchProductOrNull(Long productId) {
         try {
             return productClient.getProduct(productId);

@@ -11,7 +11,9 @@ import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByNameContainingIgnoreCase(String keyword);
+    List<Product> findByActiveTrue();
+
+    List<Product> findByNameContainingIgnoreCaseAndActiveTrue(String keyword);
 
     @Modifying(clearAutomatically = true)
     @Query("update Product p set p.quantity = p.quantity - :qty where p.id = :id and p.quantity >= :qty")

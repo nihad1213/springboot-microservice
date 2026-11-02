@@ -22,7 +22,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> fetchAllProducts() {
-        return productRepository.findAll().stream()
+        return productRepository.findByActiveTrue().stream()
                 .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }
@@ -58,11 +58,14 @@ public class ProductService {
     public void deleteProduct(Long id) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        productRepository.delete(existingProduct);
+        // soft delete: keeps the row so old orders/carts can still refer to the product id
+        existingProduct.setActive(false);
+        productRepository.save(existingProduct);
     }
 
     public ProductResponse fetchProductById(Long id) {
         return productRepository.findById(id)
+                .filter(product -> Boolean.TRUE.equals(product.getActive()))
                 .map(this::mapToProductResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
     }
@@ -93,7 +96,7 @@ public class ProductService {
     }
 
     public List<ProductResponse> searchProducts(String keyword) {
-        return productRepository.findByNameContainingIgnoreCase(keyword).stream()
+        return productRepository.findByNameContainingIgnoreCaseAndActiveTrue(keyword).stream()
                 .map(this::mapToProductResponse)
                 .collect(Collectors.toList());
     }

@@ -2,6 +2,7 @@ package com.micro.product.controller;
 
 import com.micro.product.dto.ProductRequest;
 import com.micro.product.dto.ProductResponse;
+import com.micro.product.dto.StockRequest;
 import com.micro.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,23 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAllProducts() {
         return ResponseEntity.ok(productService.fetchAllProducts());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.fetchProductById(id));
+    }
+
+    @PostMapping("/{id}/reserve")
+    public ResponseEntity<Void> reserveStock(@PathVariable Long id, @RequestBody StockRequest request) {
+        productService.reserveStock(id, request.getQuantity());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/release")
+    public ResponseEntity<Void> releaseStock(@PathVariable Long id, @RequestBody StockRequest request) {
+        productService.releaseStock(id, request.getQuantity());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/search")

@@ -2,9 +2,12 @@ package com.micro.product.service;
 
 import com.micro.product.dto.ProductRequest;
 import com.micro.product.dto.ProductResponse;
+import com.micro.product.exception.InsufficientStockException;
+import com.micro.product.exception.ResourceNotFoundException;
 import com.micro.product.model.Product;
 import com.micro.product.repository.ProductRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,7 +42,7 @@ public class ProductService {
 
     public ProductResponse updateProduct(Long id, ProductRequest updatedProductRequest) {
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         existingProduct.setName(updatedProductRequest.getName());
         existingProduct.setDescription(updatedProductRequest.getDescription());
@@ -54,8 +57,39 @@ public class ProductService {
 
     public void deleteProduct(Long id) {
         Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         productRepository.delete(existingProduct);
+    }
+
+    public ProductResponse fetchProductById(Long id) {
+        return productRepository.findById(id)
+                .map(this::mapToProductResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+    }
+
+    @Transactional
+    public void reserveStock(Long id, Integer quantity) {
+        requirePositive(quantity);
+        if (productRepository.decrementStock(id, quantity) == 0) {
+            if (!productRepository.existsById(id)) {
+                throw new ResourceNotFoundException("Product not found with id: " + id);
+            }
+            throw new InsufficientStockException("Not enough stock for product " + id);
+        }
+    }
+
+    @Transactional
+    public void releaseStock(Long id, Integer quantity) {
+        requirePositive(quantity);
+        if (productRepository.incrementStock(id, quantity) == 0) {
+            throw new ResourceNotFoundException("Product not found with id: " + id);
+        }
+    }
+
+    private void requirePositive(Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new IllegalArgumentException("quantity must be greater than 0");
+        }
     }
 
     public List<ProductResponse> searchProducts(String keyword) {

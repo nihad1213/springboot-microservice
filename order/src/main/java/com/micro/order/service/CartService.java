@@ -1,83 +1,95 @@
 package com.micro.order.service;
 
+import com.micro.order.client.ProductClient;
+import com.micro.order.client.UserClient;
 import com.micro.order.dto.CartItemResponse;
 import com.micro.order.dto.CartRequest;
+import com.micro.order.dto.ProductResponse;
+import com.micro.order.exception.BadRequestException;
+import com.micro.order.exception.InsufficientStockException;
+import com.micro.order.exception.ResourceNotFoundException;
+import com.micro.order.model.CartItem;
 import com.micro.order.repository.CartItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CartService {
 
     private final CartItemRepository cartItemRepository;
-//    private final UserRepository userRepository;
-//    private final ProductRepository productRepository;
+    private final UserClient userClient;
+    private final ProductClient productClient;
 
-    public CartItemResponse addToCart(Long userId, CartRequest cartRequest) {
-//        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-//
-//        Product product = productRepository.findById(cartRequest.getProductId())
-//                .orElseThrow(() -> new RuntimeException("Product not found with id: " + cartRequest.getProductId()));
-//
-//        CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, cartRequest.getProductId())
-//                .orElse(new CartItem());
-//
-//        if (cartItem.getId() == null) {
-//            cartItem.setUser(user);
-//            cartItem.setProduct(product);
-//            cartItem.setQuantity(cartRequest.getQuantity());
-//            BigDecimal productPrice = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
-//            cartItem.setPrice(productPrice.multiply(BigDecimal.valueOf(cartRequest.getQuantity())));
-//        } else {
-//            int newQuantity = cartItem.getQuantity() + cartRequest.getQuantity();
-//            cartItem.setQuantity(newQuantity);
-//            BigDecimal productPrice = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
-//            cartItem.setPrice(productPrice.multiply(BigDecimal.valueOf(newQuantity)));
-//        }
-//
-//        CartItem savedCartItem = cartItemRepository.save(cartItem);
-//        return mapToCartItemResponse(savedCartItem);
-//    }
+    @Transactional
+    public CartItemResponse addToCart(String userId, CartRequest cartRequest) {
+        if (cartRequest.getProductId() == null) {
+            throw new BadRequestException("productId is required");
+        }
+        if (cartRequest.getQuantity() == null || cartRequest.getQuantity() <= 0) {
+            throw new BadRequestException("quantity must be greater than 0");
+        }
 
-//    public List<CartItemResponse> getCartItems(Long userId) {
-//        return cartItemRepository.findByUserId(userId).stream()
-//                .map(this::mapToCartItemResponse)
-//                .collect(Collectors.toList());
-//    }
-//
-//    public void deleteCartItem(Long id) {
-//        CartItem cartItem = cartItemRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Cart item not found with id: " + id));
-//        cartItemRepository.delete(cartItem);
-//    }
-//
-//    private CartItemResponse mapToCartItemResponse(CartItem cartItem) {
-//        CartItemResponse response = new CartItemResponse();
-//        response.setId(cartItem.getId());
-//        response.setQuantity(cartItem.getQuantity());
-//        response.setPrice(cartItem.getPrice());
-//
-//        if (cartItem.getProduct() != null) {
-//            ProductResponse productResponse = new ProductResponse();
-//            productResponse.setId(cartItem.getProduct().getId());
-//            productResponse.setName(cartItem.getProduct().getName());
-//            productResponse.setDescription(cartItem.getProduct().getDescription());
-//            productResponse.setPrice(cartItem.getProduct().getPrice());
-//            productResponse.setStockQuantity(cartItem.getProduct().getQuantity());
-//            productResponse.setCategory(cartItem.getProduct().getCategory());
-//            productResponse.setImageUrl(cartItem.getProduct().getImageUrl());
-//            response.setProduct(productResponse);
-//        }
-//
-//        return response;
-//    }
+        userClient.assertUserExists(userId);
+        ProductResponse product = productClient.getProduct(cartRequest.getProductId());
 
-        return null;
+        CartItem cartItem = cartItemRepository
+                .findByUserIdAndProductId(userId, cartRequest.getProductId())
+                .orElseGet(() -> {
+                    CartItem created = new CartItem();
+                    created.setUserId(userId);
+                    created.setProductId(cartRequest.getProductId());
+                    created.setQuantity(0);
+                    return created;
+                });
+
+        int newQuantity = cartItem.getQuantity() + cartRequest.getQuantity();
+        if (product.getStockQuantity() == null || product.getStockQuantity() < newQuantity) {
+            throw new InsufficientStockException("Not enough stock for product " + product.getName()
+                    + " (available: " + (product.getStockQuantity() != null ? product.getStockQuantity() : 0) + ")");
+        }
+
+        BigDecimal unitPrice = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
+        cartItem.setQuantity(newQuantity);
+        cartItem.setPrice(unitPrice.multiply(BigDecimal.valueOf(newQuantity)));
+
+        return mapToCartItemResponse(cartItemRepository.save(cartItem), product);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CartItemResponse> getCartItems(String userId) {
+        return cartItemRepository.findByUserId(userId).stream()
+                .map(item -> mapToCartItemResponse(item, fetchProductOrNull(item.getProductId())))
+                .toList();
+    }
+
+    @Transactional
+    public void deleteCartItem(String userId, Long id) {
+        CartItem cartItem = cartItemRepository.findById(id)
+                .filter(item -> item.getUserId().equals(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found with id: " + id));
+        cartItemRepository.delete(cartItem);
+    }
+
+    /** A product deleted after being added to a cart should not break viewing the cart. */
+    private ProductResponse fetchProductOrNull(Long productId) {
+        try {
+            return productClient.getProduct(productId);
+        } catch (ResourceNotFoundException e) {
+            return null;
+        }
+    }
+
+    private CartItemResponse mapToCartItemResponse(CartItem cartItem, ProductResponse product) {
+        CartItemResponse response = new CartItemResponse();
+        response.setId(cartItem.getId());
+        response.setQuantity(cartItem.getQuantity());
+        response.setPrice(cartItem.getPrice());
+        response.setProduct(product);
+        return response;
     }
 }

@@ -5,10 +5,9 @@ import com.micro.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,8 +17,19 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@RequestHeader("X-User-ID") Long userId) {
+    public ResponseEntity<OrderResponse> createOrder(@RequestHeader("X-User-ID") String userId) {
         OrderResponse createdOrder = orderService.createOrder(userId);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<OrderResponse>> getOrders(@RequestHeader("X-User-ID") String userId) {
+        return ResponseEntity.ok(orderService.getOrders(userId));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrder(@RequestHeader("X-User-ID") String userId,
+                                                  @PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrder(userId, id));
     }
 }

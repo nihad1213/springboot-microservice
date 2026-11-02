@@ -17,20 +17,20 @@ public class CartController {
     private final CartService cartService;
 
     @PostMapping
-    public ResponseEntity<CartItemResponse> addToCart(@RequestBody CartRequest cartRequest) {
-        Long currentUserId = 1L;
-        return ResponseEntity.ok(cartService.addToCart(currentUserId, cartRequest));
+    public ResponseEntity<CartItemResponse> addToCart(@RequestHeader("X-User-ID") String userId,
+                                                      @RequestBody CartRequest cartRequest) {
+        return ResponseEntity.ok(cartService.addToCart(userId, cartRequest));
     }
 
-//    @GetMapping
-//    public ResponseEntity<List<CartItemResponse>> getCartItems() {
-//        Long currentUserId = 1L;
-//        return ResponseEntity.ok(cartService.getCartItems(currentUserId));
-//    }
-//
-//    @DeleteMapping("/items/{id}")
-//    public ResponseEntity<Void> deleteCartItem(@PathVariable Long id) {
-//        cartService.deleteCartItem(id);
-//        return ResponseEntity.noContent().build();
-//    }
+    @GetMapping
+    public ResponseEntity<List<CartItemResponse>> getCartItems(@RequestHeader("X-User-ID") String userId) {
+        return ResponseEntity.ok(cartService.getCartItems(userId));
+    }
+
+    @DeleteMapping("/items/{id}")
+    public ResponseEntity<Void> deleteCartItem(@RequestHeader("X-User-ID") String userId,
+                                               @PathVariable Long id) {
+        cartService.deleteCartItem(userId, id);
+        return ResponseEntity.noContent().build();
+    }
 }

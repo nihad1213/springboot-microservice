@@ -3,6 +3,7 @@ package com.micro.user.service;
 import com.micro.user.dto.AddressDTO;
 import com.micro.user.dto.UserRequest;
 import com.micro.user.dto.UserResponse;
+import com.micro.user.exception.ResourceNotFoundException;
 import com.micro.user.model.Address;
 import com.micro.user.model.User;
 import com.micro.user.repository.UserRepository;
@@ -47,7 +48,7 @@ public class UserService {
         return userRepository.findById(id)
                 .map(this::mapToUserResponse)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found with id: " + id)
+                        new ResourceNotFoundException("User not found with id: " + id)
                 );
     }
 
@@ -57,7 +58,7 @@ public class UserService {
     ) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found with id: " + id)
+                        new ResourceNotFoundException("User not found with id: " + id)
                 );
 
         existingUser.setFirstName(updatedUserRequest.getFirstName());
@@ -96,6 +97,9 @@ public class UserService {
         userResponse.setLastName(user.getLastName());
         userResponse.setEmail(user.getEmail());
         userResponse.setPhone(user.getPhone());
+        userResponse.setRole(user.getRole());
+        userResponse.setCreatedAt(user.getCreatedAt());
+        userResponse.setUpdatedAt(user.getUpdatedAt());
 
         if (user.getAddress() != null) {
             AddressDTO addressDTO = new AddressDTO();

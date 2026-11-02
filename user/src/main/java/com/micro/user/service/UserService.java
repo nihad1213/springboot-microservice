@@ -8,6 +8,8 @@ import com.micro.user.model.Address;
 import com.micro.user.model.User;
 import com.micro.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.micro.user.exception.DuplicateResourceException;
+import com.micro.user.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,11 @@ public class UserService {
     }
 
     public UserResponse addUser(UserRequest userRequest) {
+
+        if (userRepository.existsByEmail(userRequest.getEmail())) {
+            throw new DuplicateResourceException("Email already in use: " + userRequest.getEmail());
+        }
+
         User user = new User();
 
         user.setFirstName(userRequest.getFirstName());
@@ -52,14 +59,16 @@ public class UserService {
                 );
     }
 
-    public UserResponse updateUser(
-            String id,
-            UserRequest updatedUserRequest
-    ) {
+    public UserResponse updateUser(String id, UserRequest updatedUserRequest) {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found with id: " + id)
                 );
+
+        if (!updatedUserRequest.getEmail().equals(existingUser.getEmail())
+                && userRepository.existsByEmail(updatedUserRequest.getEmail())) {
+            throw new DuplicateResourceException("Email already in use: " + updatedUserRequest.getEmail());
+        }
 
         existingUser.setFirstName(updatedUserRequest.getFirstName());
         existingUser.setLastName(updatedUserRequest.getLastName());

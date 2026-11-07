@@ -1,0 +1,91 @@
+services:
+
+  postgres-product:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: micro-product
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - product-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d micro-product"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres-order:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: micro-order
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - order-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d micro-order"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo-user:
+    image: mongo:8
+    ports:
+      - "27018:27017"
+    volumes:
+      - user-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------- services ----------
+  product:
+    build: ./product
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-product:5432/micro-product
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      postgres-product:
+        condition: service_healthy
+
+  user:
+    build: ./user
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_MONGODB_URI: mongodb://mongo-user:27017/micro-user
+    depends_on:
+      mongo-user:
+        condition: service_healthy
+
+  order:
+    build: ./order
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/micro-order
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      PRODUCT_SERVICE_URL: http://product:8081
+      USER_SERVICE_URL: http://user:8082
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+      product:
+        condition: service_started
+      user:
+        condition: service_started
+
+volumes:
+  product-data:
+  order-data:
+  user-data:
